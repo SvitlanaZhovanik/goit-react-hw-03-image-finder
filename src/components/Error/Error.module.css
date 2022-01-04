@@ -1,0 +1,15 @@
+.wrapper {
+  position: relative;
+  height: 600px;
+}
+.title {
+  margin: 60px;
+  text-align: center;
+  color: #303f9f;
+}
+.img {
+  min-width: 200px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
