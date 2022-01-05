@@ -1,0 +1,15 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-direction: column;
+}
+.img {
+  min-width: 100px;
+  min-width: 100px;
+}
+.title {
+  margin: 40px;
+  text-align: center;
+  color: #303f9f;
+}

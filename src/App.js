@@ -1,6 +1,7 @@
 import s from "./App.module.css";
-import Cat from "./img/Cat.gif";
 import React, { Component } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Loader from "react-loader-spinner";
 import Searchbar from "./components/Searchbar/Searchbar";
 import getImg from "./search/api";
@@ -8,13 +9,7 @@ import ImageGallery from "./components/ImageGallery/ImageGallery";
 import Button from "./components/Button/Button";
 import Error from "./components/Error/Error";
 import Modal from "./components/Modal/Modal";
-
-const Status = {
-  IDLE: "idle",
-  PENDING: "pending",
-  RESOLVED: "resolved",
-  REJECTED: "rejected",
-};
+import HomePage from "./components/HomePage/HomePage";
 
 class App extends Component {
   state = {
@@ -22,52 +17,26 @@ class App extends Component {
     cards: [],
     error: null,
     page: 1,
-    status: Status.IDLE,
     itemToScroll: null,
     cardImg: null,
     imgAlt: null,
     showModal: false,
+    isLoading: false,
+    button: false,
   };
-  async componentDidUpdate(_, prevState) {
+  componentDidUpdate(_, prevState) {
     const { query, cards, page } = this.state;
-    try {
-      if (prevState.query !== query) {
-        this.setState({
-          page: 1,
-          cards: [],
-          status: Status.PENDING,
-          itemToScroll: null,
-        });
-      }
-      if (prevState.query !== query && page === 1) {
-        const cardsPromise = getImg(query, page);
-        cardsPromise.then((cards) => {
-          if (cards.length === 0) {
-            this.setState({ status: Status.REJECTED });
-            return;
-          }
-          this.setState({ cards, status: Status.RESOLVED });
-        });
-      }
-      if (prevState.page !== page) {
-        this.setState({
-          status: Status.PENDING,
-        });
-        const cardsPromise = getImg(query, page);
-        cardsPromise.then((cardsNew) => {
-          if (cardsNew.length === 0) {
-            this.setState({ status: Status.REJECTED });
-            return;
-          }
-          this.setState({
-            cards: [...cards, ...cardsNew],
-            itemToScroll: cardsNew[0].id,
-            status: Status.RESOLVED,
-          });
-        });
-      }
-    } catch (error) {
-      this.setState({ error, status: Status.REJECTED });
+    if (prevState.query !== query) {
+      this.setState({
+        page: 1,
+        cards: [],
+        itemToScroll: null,
+        button: false,
+        isLoading: false,
+      });
+    }
+    if ((prevState.query !== query && query) || prevState.page !== page) {
+      this.getImage();
     }
     if (prevState.cards !== cards && page > 1) {
       document.getElementById(this.state.itemToScroll)?.scrollIntoView({
@@ -76,6 +45,29 @@ class App extends Component {
       });
     }
   }
+  getImage = async () => {
+    try {
+      this.setState({ isLoading: true });
+      const { query, page } = this.state;
+      getImg(query, page).then((cardsNew) => {
+        if (cardsNew.length === 0) {
+          toast("😿 Sorry, there aren't pictures here", {
+            position: "bottom-center",
+            autoClose: 3000,
+          });
+          return this.setState({ isLoading: false, button: false });
+        }
+        this.setState({
+          cards: page === 1 ? cardsNew : [...this.state.cards, ...cardsNew],
+          itemToScroll: page === 1 ? null : cardsNew[0].id,
+          button: true,
+          isLoading: false,
+        });
+      });
+    } catch (error) {
+      this.setState({ error, button: false, isLoading: false });
+    }
+  };
   receiveRequest = (query) => {
     this.setState({ query });
   };
@@ -92,59 +84,49 @@ class App extends Component {
     }));
   };
   render() {
-    const { status, showModal, cardImg, imgAlt } = this.state;
-    if (status === "idle") {
-      return (
-        <div className={s.app}>
-          <Searchbar onSubmit={this.receiveRequest} />
-          <div className={s.wrapper}>
-            <img className={s.img} src={Cat} width="600px" alt="Cat prints" />
-          </div>
-        </div>
-      );
-    }
+    const { error, cards, showModal, cardImg, imgAlt, isLoading, button } =
+      this.state;
+    return (
+      <div className={s.app}>
+        <Searchbar onSubmit={this.receiveRequest} />
+        {cards.length === 0 && !isLoading && !error && <HomePage />}
 
-    if (status === "pending") {
-      return (
-        <div className={s.wrapper}>
-          <Loader
-            arialLabel="loading-indicator"
-            type="MutatingDots"
-            color="#1a84db"
-            secondaryColor="#b72de0"
-          />
-        </div>
-      );
-    }
-
-    if (status === "rejected") {
-      return (
-        <div>
-          <Searchbar onSubmit={this.receiveRequest} />
-          <Error />
-        </div>
-      );
-    }
-
-    if (status === "resolved") {
-      return (
-        <div className={s.app}>
-          <Searchbar onSubmit={this.receiveRequest} />
+        {error && <Error />}
+        {cards.length > 0 && (
           <ImageGallery
             cards={this.state.cards}
             onClick={this.toggleModal}
             imgData={this.handleImgClick}
           />
-          <Button onClick={this.handleButtonClick} />
-          {showModal && (
-            <Modal onClose={this.toggleModal}>
-              <img src={cardImg} alt={imgAlt} />
-            </Modal>
-          )}
-        </div>
-      );
-    }
+        )}
+        {isLoading && (
+          <div className={s.wrapper}>
+            <Loader
+              arialLabel="loading-indicator"
+              type="Hearts"
+              color="#e60e0e"
+              height="60"
+              width="60"
+            />
+          </div>
+        )}
+        {button && !isLoading && <Button onClick={this.handleButtonClick} />}
+        {showModal && (
+          <Modal onClose={this.toggleModal}>
+            <img src={cardImg} alt={imgAlt} />
+          </Modal>
+        )}
+        <ToastContainer
+          position="bottom-center"
+          autoClose={3000}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
+      </div>
+    );
   }
 }
-
 export default App;

@@ -6,7 +6,7 @@ const Error = () => {
   return (
     <div className={s.wrapper}>
       <h1 className={s.title}>
-        Oops, there aren't pictures here! Make a new request, please.
+        Oops, something went wrong. Please try again later
       </h1>
       <img className={s.img} src={Cat} alt="sadcat" />
     </div>
