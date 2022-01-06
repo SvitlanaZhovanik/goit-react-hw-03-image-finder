@@ -27,7 +27,7 @@ class App extends Component {
   componentDidUpdate(_, prevState) {
     const { query, cards, page } = this.state;
 
-    if ((prevState.query !== query && query) || prevState.page !== page) {
+    if (prevState.query !== query || prevState.page !== page) {
       if (prevState.query !== query) {
         this.setState({
           page: 1,
